@@ -25,14 +25,26 @@ if [[ -z ${1:-} ]]; then
   apt-get -y install --no-install-recommends $STATIC_PACKAGES $BUILD_PACKAGES
 
   git clone https://github.com/analogdevicesinc/libiio.git
-  cmakebuild libiio v0.21 -DCMAKE_INSTALL_PREFIX=/usr/local
+  #cmakebuild libiio v0.21 -DCMAKE_INSTALL_PREFIX=/usr/local
+  # because Pluto+ via Ethernet not reachable from Docker Container
+  cd libiio
+  git checkout v0.23
+  mkdir build
+  cd build
+  cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_LOCAL_BACKEND=NO -DWITH_IIOD=NO -DHAVE_DNS_SD=OFF ../
+  make
+  make install
+  cd ../..
+  rm -rf libiio
 
   git clone https://github.com/analogdevicesinc/libad9361-iio.git
   cmakebuild libad9361-iio v0.2
 
   git clone https://github.com/pothosware/SoapyPlutoSDR.git
   # latest from master as of 2020-09-04
-  cmakebuild SoapyPlutoSDR 93717b32ef052e0dfa717aa2c1a4eb27af16111f
+  # cmakebuild SoapyPlutoSDR 93717b32ef052e0dfa717aa2c1a4eb27af16111f
+  # Second TX/RX Channels visible. (SoapySDRUtil --probe="driver=plutosdr,hostname=pluto-lan-ip")
+  cmakebuild SoapyPlutoSDR feat-multichn
 fi
 
 if [[ -z ${FULL_BUILD:-} || ${1:-} == 'clean' ]]; then
