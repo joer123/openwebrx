@@ -224,6 +224,14 @@ class Modes(object):
             squelch=True
         ),
         DigitalMode(
+            "eas",
+            "EAS",
+            underlying=["nfm"],
+            requirements=["eas"],
+            service=True,
+            squelch=True
+        ),
+        DigitalMode(
             "ism",
             "ISM",
             underlying=["empty"],

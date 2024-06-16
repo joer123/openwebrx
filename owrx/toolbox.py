@@ -4,6 +4,7 @@ from owrx.color import ColorCache
 from owrx.reporting import ReportingEngine
 from csdr.module import LineBasedModule
 from pycsdr.types import Format
+from owrx.dsame3.dsame import same_decode_string
 from datetime import datetime, timezone
 import pickle
 import os
@@ -18,7 +19,7 @@ class TextParser(LineBasedModule):
     def __init__(self, filePrefix: str = None, service: bool = False):
         self.service   = service
         self.frequency = 0
-        self.data      = bytearray(b'')
+        self.data      = bytearray(b"")
         self.filePfx   = filePrefix
         self.file      = None
         self.maxLines  = 10000
@@ -89,7 +90,7 @@ class TextParser(LineBasedModule):
 
     # Get current UTC time in a standardized format
     def getUtcTime(self) -> str:
-        return datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
     # By default, do not parse
     def parse(self, msg: bytes):
@@ -217,9 +218,9 @@ class PageParser(TextParser):
         out = None
         # Steer message to POCSAG or FLEX parser
         if msg.startswith(b"POCSAG"):
-            out = self.parsePocsag(msg.decode('utf-8', 'replace'))
+            out = self.parsePocsag(msg.decode("utf-8", "replace"))
         elif msg.startswith(b"FLEX"):
-            out = self.parseFlex(msg.decode('utf-8', 'replace'))
+            out = self.parseFlex(msg.decode("utf-8", "replace"))
         # Ignore filtered messages
         if not out:
             return {}
@@ -356,7 +357,7 @@ class SelCallParser(TextParser):
         if self.service:
             return None
         # Parse SELCALL messages
-        msg = msg.decode('utf-8', 'replace')
+        msg = msg.decode("utf-8", "replace")
         dec = None
         out = ""
         r = self.reSplit.split(msg)
@@ -372,3 +373,44 @@ class SelCallParser(TextParser):
                 dec = None
         # Done
         return out
+
+
+class EasParser(TextParser):
+    def __init__(self, service: bool = False):
+        self.reSplit = re.compile(r"(EAS: \S+)")
+        # Construct parent object
+        super().__init__(filePrefix="EAS", service=service)
+
+    def parse(self, msg: bytes):
+        # Parse EAS SAME messages
+        msg = msg.decode("utf-8", "replace")
+        out = []
+
+        for s in self.reSplit.split(msg):
+            if not s.startswith("EAS: "):
+                continue
+            decoded = same_decode_string(s)
+            if not decoded:
+                continue
+            for d in decoded:
+                out += [s, d["msg"], ""]
+                spot = {
+                    "mode":      "EAS",
+                    "timestamp": round(time.timestamp() * 1000),
+                    "message":   d["msg"],
+                    "raw":       s,
+                    **d
+                }
+                # Remove stuff we do not need
+                del spot["msg"]
+                # Convert start and end times to UTC
+                spot["start_time"] = spot["start_time"].astimezone(timezone.utc).isoformat()
+                spot["end_time"] = spot["end_time"].astimezone(timezone.utc).isoformat()
+                # Add frequency, if known
+                if self.frequency:
+                    spot["freq"] = self.frequency
+                # Report received message
+                ReportingEngine.getSharedInstance().spot(spot)
+
+        # Return received message as text
+        return "\n".join(out)
