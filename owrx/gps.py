@@ -51,8 +51,8 @@ class GpsUpdater(object):
         GpsUpdater.getSharedInstance()
 
     def __init__(self):
-        # Refresh every 1 hour for now
-        self.refreshPeriod = 60*60
+        # Refresh every 5 minutes for now
+        self.refreshPeriod = 5*60
         self.event  = threading.Event()
         self.thread = None
         # Start/stop main thread when setting changes
@@ -76,13 +76,13 @@ class GpsUpdater(object):
     # Stop the main thread
     def stopThread(self):
         if self.thread is not None:
-            logger.debug("Stopping GPS updater thread.")
+            logger.info("Stopping GPS updater thread.")
             self.event.set()
             self.thread.join()
 
     # This is the actual thread function
     def _refreshThread(self):
-        logger.debug("Starting GPS updater thread...")
+        logger.info("Starting GPS updater thread...")
         pm  = Config.get()
         gps = GpsdClient()
         # Main loop
@@ -91,6 +91,7 @@ class GpsUpdater(object):
                 pos = gps.getPosition()
                 pos = pos.position() if pos else None
                 if pos:
+                    logger.info("New position is {0}, {1}".format(pos[0], pos[1]))
                     pm["receiver_gps"] = { "lat": pos[0], "lon": pos[1] }
             except Exception as e:
                 logger.error("Failed to get GPS position: " + str(e))
@@ -123,18 +124,18 @@ class GpsdClient(object):
     # Connect to GPSD at given address and port
     def connect(self, host: str = "127.0.0.1", port: int = 2947):
         self.disconnect()
-        logger.debug("Connecting to GPSD at {}:{}".format(host, port))
+        logger.info("Connecting to GPSD at {}:{}".format(host, port))
         try:
             # Connect socket
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((host, port))
             self.stream = self.socket.makefile(mode="rw")
             # Perform initial exchange
-            logger.debug("Waiting for welcome message...")
+            logger.info("Waiting for welcome message...")
             welcome = json.loads(self.stream.readline())
             if "class" not in welcome or welcome["class"] != "VERSION":
                 raise Exception("Unexpected data received as welcome. Not a GPSD v3 server?")
-            logger.debug("Enabling GPS...")
+            logger.info("Enabling GPS...")
             self.stream.write('?WATCH={"enable":true}\n')
             self.stream.flush()
             # Get initial state
@@ -158,7 +159,7 @@ class GpsdClient(object):
     # Get current GPS position
     def getPosition(self):
         if self.stream:
-            logger.debug("Polling GPSD for position...")
+            logger.info("Polling GPSD for position...")
             try:
                 # Poll GPSD
                 self.stream.write("?POLL;\n")
