@@ -47,12 +47,16 @@ tar xzf s6-overlay-${PLATFORM}.tar.gz -C /
 rm s6-overlay-${PLATFORM}.tar.gz
 
 git clone https://github.com/windytan/redsea.git
-pushd redsea
-./autogen.sh
-./configure
-make
-make install
-popd
+cd redsea
+meson setup build && cd build && meson compile
+cd ..
+rm -rf redsea
+#pushd redsea
+#./autogen.sh
+#./configure
+#make
+#make install
+#popd
 
 JS8CALL_VERSION=2.2.0
 JS8CALL_DIR=js8call
