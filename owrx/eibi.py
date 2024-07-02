@@ -68,23 +68,33 @@ class EIBI(object):
 
     @staticmethod
     def getDescription(b):
-        description = ""
+        description = []
         # Describe target region
         if "tgt" in b:
-            description += "Targeting " + b["tgt"] + "."
-        # Describe transmitter locations
-        if "src" in b and b["src"] in EIBI_Locations:
-            description += (
-                (" " if len(description) > 0 else "") +
-                "Transmitting from " +
-                ", ".join([x["name"] for x in EIBI_Locations[b["src"]]])
-            )
+            target = b["tgt"]
             # Add country name if ITU code present
             if "itu" in b and b["itu"] in EIBI_Countries:
-                description += ", " + EIBI_Countries[b["itu"]]
-            description += "."
+                source = EIBI_Countries[b["itu"]]
+            else:
+                source = target
+            description += [(
+                "Broadcasting to " + target +
+                ((" from " + source) if source != target else "") +
+                "."
+            )]
+        # Describe transmitter locations
+        if "src" in b and b["src"] in EIBI_Locations:
+            pm = Config.get()
+            rxPos = (pm["receiver_gps"]["lat"], pm["receiver_gps"]["lon"])
+            description += [(
+                "Transmitting from " +
+                ", ".join([
+                    "{0} ({1}km)".format(x["name"], EIBI.distKm(rxPos, (x["lat"], x["lon"])))
+                    for x in EIBI_Locations[b["src"]]
+                ]) + "."
+            )]
         # Done
-        return description
+        return " ".join(description)
 
     def __init__(self):
         self.patternCSV = re.compile(r"^([\d\.]+);(\d\d\d\d)-(\d\d\d\d);(\S*);(\S+);(.*);(.*);(.*);(.*);(\d+);(.*);(.*)$")
