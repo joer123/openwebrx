@@ -86,7 +86,9 @@ FrequencyEditor.prototype.getInputHtml = function() {
                 $.map(FrequencyEditor.suffixes, function(v, k) {
                     // fix lowercase "kHz"
                     if (k === "K") k = "k";
-                    return '<option value="' + v + '">' + k + 'Hz</option>';
+                    // select kHz by default
+                    var s = k === "k"? " selected" : "";
+                    return '<option value="' + v + '"' + s + '>' + k + 'Hz</option>';
                 }).join('') +
             '</select>' +
         '</div>' +
@@ -127,7 +129,7 @@ FrequencyEditor.prototype.setupEvents = function() {
 FrequencyEditor.prototype.getValue = function() {
     var frequency = parseFloat(this.freqInput.val());
     var exp = parseInt(this.expInput.val());
-    return Math.floor(frequency * 10 ** exp);
+    return Math.round(frequency * 10 ** exp);
 };
 
 FrequencyEditor.prototype.setValue = function(value) {
@@ -158,7 +160,7 @@ var renderFrequency = function(freq) {
     }
     // fix lowercase 'kHz'
     suffix = suffix[0] == 'K' ? 'k' : suffix[0];
-    var expString = suffix[0] + 'Hz';
+    var expString = suffix + 'Hz';
     return frequency + ' ' + expString;
 };
 
