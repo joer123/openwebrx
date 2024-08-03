@@ -52,11 +52,13 @@ class ClientRegistry(object):
             raise TooManyClientsException()
         self.clients.append(client)
         self.broadcast()
+        self.reportClient(client, { "state":"CONNECTED" })
 
     def clientCount(self):
         return len(self.clients)
 
     def removeClient(self, client):
+        self.reportClient(client, { "state":"DISCONNECTED" })
         try:
             if client in self.chat:
                 del self.chat[client]
@@ -64,11 +66,32 @@ class ClientRegistry(object):
         except ValueError:
             pass
         self.broadcast()
+        self.reportClient(client, False)
 
     def _checkClientCount(self, new_count):
         for client in self.clients[new_count:]:
             logger.debug("closing one connection...")
             client.close()
+
+    # Report client events
+    def reportClient(self, client, data):
+        from owrx.reporting import ReportingEngine
+        data.update({
+            "mode"      : "CLIENT",
+            "timestamp" : round(datetime.now().timestamp() * 1000),
+            "ip"        : self.getIp(client.conn.handler),
+            "banned"    : self.isBanned(client.conn.handler)
+        })
+        ReportingEngine.getSharedInstance().spot(data)
+
+    # Report chat message from a client
+    def reportChatMessage(self, client, text: str):
+        name = self.chat[client]["name"] if client in self.chat else "???"
+        self.reportClient(client, {
+            "state"   : "CHAT",
+            "name"    : name,
+            "message" : text
+        })
 
     # Broadcast chat message to all connected clients.
     def broadcastChatMessage(self, client, text: str, name: str = None):
@@ -107,6 +130,9 @@ class ClientRegistry(object):
         # Broadcast message to all clients
         for c in self.clients:
             c.write_chat_message(name, text, color)
+
+        # Report message
+        self.reportChatMessage(client, text)
 
     # Broadcast administrative message to all connected clients.
     def broadcastAdminMessage(self, text: str):
