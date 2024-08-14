@@ -52,13 +52,12 @@ class ClientRegistry(object):
             raise TooManyClientsException()
         self.clients.append(client)
         self.broadcast()
-        self.reportClient(client, { "state":"CONNECTED" })
+        self.reportClient(client, { "state":"Connected" })
 
     def clientCount(self):
         return len(self.clients)
 
     def removeClient(self, client):
-        self.reportClient(client, { "state":"DISCONNECTED" })
         try:
             if client in self.chat:
                 del self.chat[client]
@@ -66,7 +65,7 @@ class ClientRegistry(object):
         except ValueError:
             pass
         self.broadcast()
-        self.reportClient(client, False)
+        self.reportClient(client, { "state":"Disconnected" })
 
     def _checkClientCount(self, new_count):
         for client in self.clients[new_count:]:
@@ -88,7 +87,7 @@ class ClientRegistry(object):
     def reportChatMessage(self, client, text: str):
         name = self.chat[client]["name"] if client in self.chat else "???"
         self.reportClient(client, {
-            "state"   : "CHAT",
+            "state"   : "ChatMessage",
             "name"    : name,
             "message" : text
         })
