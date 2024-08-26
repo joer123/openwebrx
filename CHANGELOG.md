@@ -1,3 +1,7 @@
+**1.2.67**
+- Added keyboard shortcuts (press [?] for help).
+- Added range check to the FFT overlap parameter.
+
 **1.2.66**
 - Added bookmark option to enable/disable scanning.
 - SSB, CW, AM, SAM, and NFM bookmarks are scanned by default.
