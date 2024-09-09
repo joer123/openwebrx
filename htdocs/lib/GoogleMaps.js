@@ -125,8 +125,7 @@ GSimpleMarker.prototype.setMarkerOptions = function(options) {
 //
 
 function GLocator() {
-    this.rect = new google.maps.Rectangle();
-    this.rect.setOptions({
+    this.rect = new google.maps.Rectangle({
         strokeWeight : 0,
         strokeColor  : "#FFFFFF",
         fillColor    : "#FFFFFF",
@@ -136,7 +135,7 @@ function GLocator() {
 
 GLocator.prototype = new Locator();
 
-GLocator.prototype.setMap = function(map) {
+GLocator.prototype.setMap = function(map = null) {
     this.rect.setMap(map);
 };
 
@@ -160,4 +159,62 @@ GLocator.prototype.setOpacity = function(opacity) {
         strokeOpacity : LocatorManager.strokeOpacity * opacity,
         fillOpacity   : LocatorManager.fillOpacity * opacity
     });
+};
+
+//
+// GoogleMaps-Specific Call
+//
+
+function GCall() {
+    const dash = {
+        path          : 'M 0,-1 0,1',
+        scale         : 2,
+        strokeColor   : '#000000',
+        strokeWeight  : 1,
+        strokeOpacity : 0.5
+    };
+    const arrow = {
+        path          : google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+        scale         : 1.5,
+        strokeColor   : '#000000',
+        strokeWeight  : 1,
+        strokeOpacity : 0.5,
+        fillOpacity   : 1.0
+    };
+
+    this.line = new google.maps.Polyline({
+        geodesic      : true,
+        strokeColor   : '#000000',
+        strokeOpacity : 0,
+        strokeWeight  : 0,
+        icons         : [
+             { icon: dash, offset: '0%', repeat: '8px' },
+             { icon: arrow, offset: '25px' },
+             { icon: arrow, offset: '100%' }
+        ]
+    });
+}
+
+GCall.prototype = new Call();
+
+GCall.prototype.setMap = function(map = null) {
+    this.line.setMap(map);
+};
+
+GCall.prototype.setEnds = function(lat1, lon1, lat2, lon2) {
+    this.line.setOptions({ path : [
+        { lat: lat1, lng: lon1 }, { lat: lat2, lng: lon2 }
+    ]});
+};
+
+GCall.prototype.setColor = function(color) {
+    this.line.icons.forEach((x) => { x.icon.strokeColor = color; });
+    this.line.setOptions({ icons: this.line.icons });
+//    this.line.setOptions({ strokeColor: color });
+};
+
+GCall.prototype.setOpacity = function(opacity) {
+    this.line.icons.forEach((x) => { x.icon.strokeOpacity = opacity; });
+    this.line.setOptions({ icons: this.line.icons });
+//    this.line.setOptions({ strokeOpacity : opacity });
 };
