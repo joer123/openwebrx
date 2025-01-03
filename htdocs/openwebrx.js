@@ -978,7 +978,7 @@ function on_ws_recv(evt) {
                             Utils.setVesselUrl(config['vessel_url']);
                         }
 
-                        // Load user interface settings
+                        // Load user interface settings from local storage
                         UI.loadSettings();
                         Chat.loadSettings();
 
